@@ -1,0 +1,1 @@
+Criei esse script para gerar backups dos meus arquivos pessoais. Ele compacta e criptografa as pastas. Tem 3 opções de parâmetros, para gerar backup completo em apenas 1 arquivo, backup completo com 1 arquivo para cada diretório ou backup parcial, que permite selecionar apenas 1 diretório para fazer o backup. Foi pensado seguindo a filosofia UNIX, faça apenas uma coisa bem feita.
