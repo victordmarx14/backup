@@ -1,0 +1,63 @@
+#!/usr/bin/env bash
+
+bkp_type="$1"
+date=$(date "+%d-%m-%y")
+cd ~/Seagate/Pessoal/
+# Lista apenas os diretório sem a / no final, ignora o diretório My Games e coloca o resultado na variável dirs
+dirs=($(ls -d */ | sed 's:/$::' | grep -v "^My Games$"))
+
+case "$bkp_type" in
+	t)
+		archive_name="Pessoal-$date.tar.gz"
+
+	        echo "Compactando diretório Pessoal"
+        	tar -czvf ~/Seagate/Backups/$archive_name -C ~/Seagate/Pessoal .
+	        echo "Compactação concluída"
+
+        	echo "Criptografando arquivo"
+	        gpg -o ~/Seagate/Backups/$archive_name.gpg -e -r "Backup pessoal" ~/Seagate/Backups/$archive_name
+        	echo "Criptografia concluída"
+
+	        echo "Removendo arquivo compactado"
+        	rm ~/Seagate/Backups/$archive_name
+	        echo "Arquivo removido"
+		;;
+	ts)
+		for directory in "${dirs[@]}"; do
+                	archive_name="$directory-$date.tar.gz"
+
+	                echo "Compactando diretório $directory"
+        	        tar -czvf ~/Seagate/Backups/$archive_name -C ~/Seagate/Pessoal/$directory .
+                	echo "Compactação concluída"
+
+	                echo "Criptografando arquivo"
+        	        gpg -o ~/Seagate/Backups/$archive_name.gpg -e -r "Backup pessoal" ~/Seagate/Backups/$archive_name
+                	echo "Criptografia concluída"
+
+	                echo "Removendo arquivo compactado"
+        	        rm ~/Seagate/Backups/$archive_name
+                	echo "Arquivo removido"
+	        done
+		;;
+	p)
+		# Exibe os diretório de forma numerada e aguarda retorno do usuário
+	        select directory in "${dirs[@]}"; do
+        	    echo "Você escolheu: $directory"
+            		break
+	        done
+
+		archive_name="$directory-$date.tar.gz"
+
+	        echo "Compactando diretório $directory"
+        	tar -czvf ~/Seagate/Backups/$archive_name -C ~/Seagate/Pessoal/$directory .
+	        echo "Compactação concluída"
+
+        	echo "Criptografando arquivo"
+	        gpg -o ~/Seagate/Backups/$archive_name.gpg -e -r "Backup pessoal" ~/Seagate/Backups/$archive_name
+        	echo "Criptografia concluída"
+
+	        echo "Removendo arquivo compactado"
+        	rm ~/Seagate/Backups/$archive_name
+	        echo "Arquivo removido"
+		;;
+esac
