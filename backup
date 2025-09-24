@@ -1,63 +1,108 @@
 #!/usr/bin/env bash
 
 bkp_type="$1"
+
+if [ $# -ne 1 ]; then
+	echo "Você precisa especificar apenas um dos parâmetros: t para backup total em arquivo único, ou ts para backup total em arquivos separados, ou p para backup parcial"
+	exit 1
+fi
+
 date=$(date "+%d-%m-%y")
-cd ~/Seagate/Pessoal/
-# Lista apenas os diretório sem a / no final, ignora o diretório My Games e coloca o resultado na variável dirs
-dirs=($(ls -d */ | sed 's:/$::' | grep -v "^My Games$"))
+
+dir_pessoal=~/Seagate/Pessoal
+dir_bkp=~/Seagate/Backups
+
+cd $dir_pessoal
+# Lista apenas os diretório sem a / no final, ignora o diretório My Games e coloca o resultado na variável dirs. Também considera que nomes de diretórios com espaços serão considerados apenas 1 diretório.
+IFS=$'\n' dirs=($(ls -d */ | sed 's:/$::' | grep -v "^My Games")) ; unset IFS
 
 case "$bkp_type" in
 	t)
+		LOGFILE=$dir_bkp/T-$date.log
+		exec > >(tee >(awk '{ print strftime("[%H:%M:%S]"), $0; fflush(); }' >> "$LOGFILE")) 2>&1
+
 		archive_name="Pessoal-$date.tar.gz"
 
 	        echo "Compactando diretório Pessoal"
-        	tar -czvf ~/Seagate/Backups/$archive_name -C ~/Seagate/Pessoal .
+        	tar -czvf $dir_bkp/$archive_name -C $dir_pessoal .
 	        echo "Compactação concluída"
 
         	echo "Criptografando arquivo"
-	        gpg -o ~/Seagate/Backups/$archive_name.gpg -e -r "Backup pessoal" ~/Seagate/Backups/$archive_name
+	        gpg -o $dir_bkp/$archive_name.gpg -e -r "Backup pessoal" $dir_bkp/$archive_name
         	echo "Criptografia concluída"
 
 	        echo "Removendo arquivo compactado"
-        	rm ~/Seagate/Backups/$archive_name
+        	rm $dir_bkp/$archive_name
 	        echo "Arquivo removido"
+
+		echo "Criptografando log"
+		gpg -o $LOGFILE.gpg -e -r "Backup pessoal" $LOGFILE
+		echo "Log criptografado"
+		echo "Removendo arquivo de log original"
+		rm $LOGFILE
+		echo "Arquivo removido"
 		;;
 	ts)
 		for directory in "${dirs[@]}"; do
+			LOGFILE=$dir_bkp/TS-$directory-$date.log
+			exec > >(tee >(awk '{ print strftime("[%H:%M:%S]"), $0; fflush(); }' >> "$LOGFILE")) 2>&1
+
                 	archive_name="$directory-$date.tar.gz"
 
 	                echo "Compactando diretório $directory"
-        	        tar -czvf ~/Seagate/Backups/$archive_name -C ~/Seagate/Pessoal/$directory .
+        	        tar -czvf $dir_bkp/$archive_name -C $dir_pessoal/$directory .
                 	echo "Compactação concluída"
 
 	                echo "Criptografando arquivo"
-        	        gpg -o ~/Seagate/Backups/$archive_name.gpg -e -r "Backup pessoal" ~/Seagate/Backups/$archive_name
+        	        gpg -o $dir_bkp/$archive_name.gpg -e -r "Backup pessoal" $dir_bkp/$archive_name
                 	echo "Criptografia concluída"
 
 	                echo "Removendo arquivo compactado"
-        	        rm ~/Seagate/Backups/$archive_name
+        	        rm $dir_bkp/$archive_name
                 	echo "Arquivo removido"
+
+			echo "Criptografando log"
+			gpg -o $LOGFILE.gpg -e -r "Backup pessoal" $LOGFILE
+			echo "Log criptografado"
+			echo "Removendo arquivo de log original"
+			rm $LOGFILE
+			echo "Arquivo removido"
 	        done
 		;;
 	p)
 		# Exibe os diretório de forma numerada e aguarda retorno do usuário
+		PS3="Escolha um diretório: "
 	        select directory in "${dirs[@]}"; do
-        	    echo "Você escolheu: $directory"
-            		break
+			if [ -n "$directory" ]; then
+          			echo "Você escolheu: $directory"
+	            		break
+			else
+				echo "Opção inválida: $REPLY"
+			fi
 	        done
+
+		LOGFILE=$dir_bkp/P-$directory-$date.log
+		exec > >(tee >(awk '{ print strftime("[%H:%M:%S]"), $0; fflush(); }' >> "$LOGFILE")) 2>&1
 
 		archive_name="$directory-$date.tar.gz"
 
 	        echo "Compactando diretório $directory"
-        	tar -czvf ~/Seagate/Backups/$archive_name -C ~/Seagate/Pessoal/$directory .
+        	tar -czvf $dir_bkp/$archive_name -C $dir_pessoal/$directory .
 	        echo "Compactação concluída"
 
         	echo "Criptografando arquivo"
-	        gpg -o ~/Seagate/Backups/$archive_name.gpg -e -r "Backup pessoal" ~/Seagate/Backups/$archive_name
+	        gpg -o $dir_bkp/$archive_name.gpg -e -r "Backup pessoal" $dir_bkp/$archive_name
         	echo "Criptografia concluída"
 
 	        echo "Removendo arquivo compactado"
-        	rm ~/Seagate/Backups/$archive_name
+        	rm $dir_bkp/$archive_name
 	        echo "Arquivo removido"
+
+		echo "Criptografando log"
+		gpg -o $LOGFILE.gpg -e -r "Backup pessoal" $LOGFILE
+		echo "Log criptografado"
+		echo "Removendo arquivo de log original"
+		rm $LOGFILE
+		echo "Arquivo removido"
 		;;
 esac
