@@ -34,13 +34,6 @@ case "$bkp_type" in
 	        echo "Removendo arquivo compactado"
         	rm $dir_bkp/$archive_name
 	        echo "Arquivo removido"
-
-		echo "Criptografando log"
-		gpg -o $LOGFILE.gpg -e -r "Backup pessoal" $LOGFILE
-		echo "Log criptografado"
-		echo "Removendo arquivo de log original"
-		rm $LOGFILE
-		echo "Arquivo removido"
 		;;
 	ts)
 		for directory in "${dirs[@]}"; do
@@ -60,6 +53,70 @@ case "$bkp_type" in
 	                echo "Removendo arquivo compactado"
         	        rm $dir_bkp/$archive_name
                 	echo "Arquivo removido"
+	        done
+		;;
+	p)
+		#Exibe os diretório de forma numerada e aguarda retorno do usuário
+		i=1
+		for dir in "${dirs[@]}"; do
+			echo "$i) $dir"
+			((i++))
+		done
+
+		while true; do
+			read -rp "Escolha um ou mais diretórios (números separados por espaço): " REPLY
+
+			 # Se nada foi digitado
+	    		if [[ -z "$REPLY" ]]; then
+        			echo "Nenhuma opção informada. Tente novamente."
+    			    	continue
+	    		fi
+
+    			# Transforma a entrada em array (separado por espaço)
+	    		choices=($REPLY)
+
+			declare -A seen=()
+
+    			# Array para armazenar os diretórios válidos
+    			selected=()
+
+	    		# Validar cada escolha
+    			valid=true
+    			for choice in "${choices[@]}"; do
+        			if [[ "$choice" =~ ^[0-9]+$ ]] && (( choice >= 1 && choice <= ${#dirs[@]} )); then
+					if [[ -z "${seen[$choice]}" ]]; then
+						selected+=("${dirs[choice-1]}")
+						seen[$choice]=1
+					fi
+        			else
+            				echo "Opção inválida: $choice"
+            				valid=false
+	        		fi
+    			done
+
+    			if $valid; then
+        			echo "Você escolheu: ${selected[*]}"
+	        		break
+    			fi
+		done
+
+		for directory in "${selected[@]}"; do
+			LOGFILE=$dir_bkp/P-$directory-$date.log
+			exec > >(tee >(awk '{ print strftime("[%H:%M:%S]"), $0; fflush(); }' >> "$LOGFILE")) 2>&1
+
+			archive_name="$directory-$date.tar.gz"
+
+	        	echo "Compactando diretório $directory"
+        		tar -czvf $dir_bkp/$archive_name -C $dir_pessoal/$directory .
+	        	echo "Compactação concluída"
+
+        		echo "Criptografando arquivo"
+	        	gpg -o $dir_bkp/$archive_name.gpg -e -r "Backup pessoal" $dir_bkp/$archive_name
+        		echo "Criptografia concluída"
+
+	        	echo "Removendo arquivo compactado"
+        		rm $dir_bkp/$archive_name
+	        	echo "Arquivo removido"
 
 			echo "Criptografando log"
 			gpg -o $LOGFILE.gpg -e -r "Backup pessoal" $LOGFILE
@@ -67,42 +124,6 @@ case "$bkp_type" in
 			echo "Removendo arquivo de log original"
 			rm $LOGFILE
 			echo "Arquivo removido"
-	        done
-		;;
-	p)
-		# Exibe os diretório de forma numerada e aguarda retorno do usuário
-		PS3="Escolha um diretório: "
-	        select directory in "${dirs[@]}"; do
-			if [ -n "$directory" ]; then
-          			echo "Você escolheu: $directory"
-	            		break
-			else
-				echo "Opção inválida: $REPLY"
-			fi
-	        done
-
-		LOGFILE=$dir_bkp/P-$directory-$date.log
-		exec > >(tee >(awk '{ print strftime("[%H:%M:%S]"), $0; fflush(); }' >> "$LOGFILE")) 2>&1
-
-		archive_name="$directory-$date.tar.gz"
-
-	        echo "Compactando diretório $directory"
-        	tar -czvf $dir_bkp/$archive_name -C $dir_pessoal/$directory .
-	        echo "Compactação concluída"
-
-        	echo "Criptografando arquivo"
-	        gpg -o $dir_bkp/$archive_name.gpg -e -r "Backup pessoal" $dir_bkp/$archive_name
-        	echo "Criptografia concluída"
-
-	        echo "Removendo arquivo compactado"
-        	rm $dir_bkp/$archive_name
-	        echo "Arquivo removido"
-
-		echo "Criptografando log"
-		gpg -o $LOGFILE.gpg -e -r "Backup pessoal" $LOGFILE
-		echo "Log criptografado"
-		echo "Removendo arquivo de log original"
-		rm $LOGFILE
-		echo "Arquivo removido"
+		done
 		;;
 esac
