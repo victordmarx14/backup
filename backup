@@ -1,11 +1,72 @@
 #!/usr/bin/env bash
 
+################################################################################
+# AUTOR: Victor Dias Marques                                                   #
+# CONTATO: victordmarx@pm.me                                                   #    
+# DATA: 20/09/2025                                                             #
+# DESCRIÇÃO: Gera backups de arquivos pessoais                                 #
+################################################################################
+# VERSÃO: v1.2.1                                                               #
+# HISTÓRICO:                                                                   #
+#   1.2.1: 28/09/2025                                                          #
+#     CORREÇÕES                                                                #
+#        - Agora o script valida se o parâmetro informado é válido.            #
+#        - Criada remoção do arquivo de log dos backups t e ts.                #
+#     REFATORAÇÃO                                                              #
+#        - Criada function para compactação, criptografia e remoção dos        #
+#          arquivos.                                                           #
+#   1.2.0: 26/09/2025                                                          #
+#     CORREÇÕES                                                                #
+#        - Caso fosse informado o mesmo diretório 2 vezes, ele fazia o mesmo   #
+#          backup, agora ignora a segunda vez.                                 #
+#     MELHORIAS                                                                #
+#        - Implementação realizada para permitir selecionar mais de 1 diretório#
+#          no backup parcial.                                                  #
+#   1.1.0: 24/09/2025                                                          #
+#     CORREÇÕES                                                                #
+#        - Validação de parâmetros ao chamar o backup                          #
+#        - Trata diretórios com espaços como um só                             #
+#      MELHORIAS                                                               #
+#         - Implementada geração de log                                        #
+#         - Implementada criptografia de log e remoção do arquivo original     #
+#         - Caminhos de diretórios colocados em variáveis                      #
+#         - É criado um log para cada diretório                                #
+#   1.0.0: 27/09/2025 - Versão inicial                                         #
+################################################################################
+
+function com_crypt_rem() {
+    echo "Compactando diretório $directory"
+    tar -czvf $dir_bkp/$archive_name -C $dir_pessoal/$directory .
+    echo "Compactação concluída"
+
+    echo "Criptografando arquivo"
+    gpg -o $dir_bkp/$archive_name.gpg -e -r "Backup pessoal" $dir_bkp/$archive_name
+    echo "Criptografia concluída"
+
+    echo "Removendo arquivo compactado"
+    rm $dir_bkp/$archive_name
+    echo "Arquivo removido"
+   
+    echo "Criptografando log"
+    gpg -o $LOGFILE.gpg -e -r "Backup pessoal" $LOGFILE
+    echo "Log criptografado"
+    echo "Removendo arquivo de log original"
+    rm $LOGFILE
+    echo "Arquivo removido"
+}
+
 bkp_type="$1"
 
-if [ $# -ne 1 ]; then
+if [ $# -ne 1 ]; then # valida se a quantidade de parâmetros informados ($#) não é igual a 1.
 	echo "Você precisa especificar apenas um dos parâmetros: t para backup total em arquivo único, ou ts para backup total em arquivos separados, ou p para backup parcial"
 	exit 1
 fi
+
+if [[ "$bkp_type" != "t" && "$bkp_type" != "ts" && "$bkp_type" != "p" ]]; then
+    echo "Parâmetro inválido."
+    exit 1
+fi
+
 
 date=$(date "+%d-%m-%y")
 
@@ -22,19 +83,10 @@ case "$bkp_type" in
 		exec > >(tee >(awk '{ print strftime("[%H:%M:%S]"), $0; fflush(); }' >> "$LOGFILE")) 2>&1
 
 		archive_name="Pessoal-$date.tar.gz"
-
-	        echo "Compactando diretório Pessoal"
-        	tar -czvf $dir_bkp/$archive_name -C $dir_pessoal .
-	        echo "Compactação concluída"
-
-        	echo "Criptografando arquivo"
-	        gpg -o $dir_bkp/$archive_name.gpg -e -r "Backup pessoal" $dir_bkp/$archive_name
-        	echo "Criptografia concluída"
-
-	        echo "Removendo arquivo compactado"
-        	rm $dir_bkp/$archive_name
-	        echo "Arquivo removido"
+		com_crypt_rem
+		
 		;;
+
 	ts)
 		for directory in "${dirs[@]}"; do
 			LOGFILE=$dir_bkp/TS-$directory-$date.log
@@ -42,17 +94,7 @@ case "$bkp_type" in
 
                 	archive_name="$directory-$date.tar.gz"
 
-	                echo "Compactando diretório $directory"
-        	        tar -czvf $dir_bkp/$archive_name -C $dir_pessoal/$directory .
-                	echo "Compactação concluída"
-
-	                echo "Criptografando arquivo"
-        	        gpg -o $dir_bkp/$archive_name.gpg -e -r "Backup pessoal" $dir_bkp/$archive_name
-                	echo "Criptografia concluída"
-
-	                echo "Removendo arquivo compactado"
-        	        rm $dir_bkp/$archive_name
-                	echo "Arquivo removido"
+			com_crypt_rem
 	        done
 		;;
 	p)
@@ -106,24 +148,7 @@ case "$bkp_type" in
 
 			archive_name="$directory-$date.tar.gz"
 
-	        	echo "Compactando diretório $directory"
-        		tar -czvf $dir_bkp/$archive_name -C $dir_pessoal/$directory .
-	        	echo "Compactação concluída"
-
-        		echo "Criptografando arquivo"
-	        	gpg -o $dir_bkp/$archive_name.gpg -e -r "Backup pessoal" $dir_bkp/$archive_name
-        		echo "Criptografia concluída"
-
-	        	echo "Removendo arquivo compactado"
-        		rm $dir_bkp/$archive_name
-	        	echo "Arquivo removido"
-
-			echo "Criptografando log"
-			gpg -o $LOGFILE.gpg -e -r "Backup pessoal" $LOGFILE
-			echo "Log criptografado"
-			echo "Removendo arquivo de log original"
-			rm $LOGFILE
-			echo "Arquivo removido"
+	        	com_crypt_rem
 		done
 		;;
 esac
