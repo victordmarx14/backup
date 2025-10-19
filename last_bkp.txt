@@ -1,0 +1,14 @@
+/var/home/victor/Seagate/Pessoal/Audios 2025-10-05
+/var/home/victor/Seagate/Pessoal/Budismo 2025-10-05
+/var/home/victor/Seagate/Pessoal/chaves 2025-10-05
+/var/home/victor/Seagate/Pessoal/Contas 2025-10-19
+/var/home/victor/Seagate/Pessoal/documentos_pessoais 2025-10-05
+/var/home/victor/Seagate/Pessoal/franquias 2025-10-05
+/var/home/victor/Seagate/Pessoal/imoveis 2025-10-05
+/var/home/victor/Seagate/Pessoal/livros 2025-10-05
+/var/home/victor/Seagate/Pessoal/memes 2025-10-19
+/var/home/victor/Seagate/Pessoal/programacao 2025-10-19
+/var/home/victor/Seagate/Pessoal/texts 2025-10-19
+/var/home/victor/Seagate/Pessoal/viagens 2025-10-05
+/var/home/victor/Seagate/Pessoal/Viajezen 2025-10-05
+/var/home/victor/Seagate/cursos/dba 2025-10-19
