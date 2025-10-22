@@ -124,6 +124,8 @@ case "$bkp_type" in
 	    ((i++))
 	done
 
+	echo "0 - Voltar"
+
 	while true; do
 	    read -rp "Escolha um ou mais diretórios (números separados por espaço): " REPLY
 
@@ -131,6 +133,8 @@ case "$bkp_type" in
 	    if [[ -z "$REPLY" ]]; then
         	echo "Nenhuma opção informada. Tente novamente."
     	    	continue
+	    elif [ $REPLY = '0' ]; then
+		break
 	    fi
 
 	    # Transforma a entrada em array (separado por espaço)
