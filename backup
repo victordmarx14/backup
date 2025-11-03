@@ -2,33 +2,40 @@
 
 ################################################################################
 # AUTOR: Victor Dias Marques                                                   #
-# CONTATO: victordmarx@pm.me                                                   #    
+# CONTATO: victordmarx@pm.me                                                   #
 # DATA: 20/09/2025                                                             #
 # DESCRIÇÃO: Gera backups de arquivos pessoais                                 #
 ################################################################################
-# VERSÃO: v1.3.0                                                               #
+# VERSÃO: v1.4.1                                                               #
 # HISTÓRICO:                                                                   #
-#   1.3.0: 19/10/2025                                                          #
+#   1.4.1: 02/11/2025							       #
+#     CORREÇÃO								       #
+#	 - Corrigido bug que fazia não encontrar o arquivo last_bkp.txt        #
+#   1.4.0: 22/10/2025 (fa6cfbf)                                                #
+#     MELHORIA                                                                 #
+#        - No backup p, criada opção para voltar, algo necessário para que a   #
+#          TARDIS funcione melhor.                                             #
+#   1.3.0: 19/10/2025 (1c04e03)                                                #
 #     MELHORIAS                                                                #
 #        - Criado o arquivo last_bkp.txt, que serve como whitelist e controle  #
 #          de datas de backups.                                                #
 #        - O backup ts passa a validar se a data de alteração do diretório é   #
 #          posterior à data do último backup, antes de realizar.               #
-#   1.2.1: 28/09/2025                                                          #
+#   1.2.1: 28/09/2025 (c1b1691)                                                #
 #     CORREÇÕES                                                                #
 #        - Agora o script valida se o parâmetro informado é válido.            #
 #        - Criada remoção do arquivo de log dos backups t e ts.                #
 #     REFATORAÇÃO                                                              #
 #        - Criada function para compactação, criptografia e remoção dos        #
 #          arquivos.                                                           #
-#   1.2.0: 26/09/2025                                                          #
+#   1.2.0: 26/09/2025 (f0159be)                                                #
 #     CORREÇÕES                                                                #
 #        - Caso fosse informado o mesmo diretório 2 vezes, ele fazia o mesmo   #
 #          backup, agora ignora a segunda vez.                                 #
 #     MELHORIAS                                                                #
 #        - Implementação realizada para permitir selecionar mais de 1 diretório#
 #          no backup parcial.                                                  #
-#   1.1.0: 24/09/2025                                                          #
+#   1.1.0: 24/09/2025 (49cf7f3)                                                #
 #     CORREÇÕES                                                                #
 #        - Validação de parâmetros ao chamar o backup                          #
 #        - Trata diretórios com espaços como um só                             #
@@ -37,11 +44,11 @@
 #         - Implementada criptografia de log e remoção do arquivo original     #
 #         - Caminhos de diretórios colocados em variáveis                      #
 #         - É criado um log para cada diretório                                #
-#   1.0.0: 27/09/2025 - Versão inicial                                         #
+#   1.0.0: 27/09/2025 - Versão inicial (7d881ab)                               #
 ################################################################################
 
 function com_crypt_rem() {
-   
+
     echo "Compactando diretório $directory"
     tar -czvf $dir_bkp/$archive_name -C $directory .
     echo "Compactação concluída"
@@ -53,7 +60,7 @@ function com_crypt_rem() {
     echo "Removendo arquivo compactado"
     rm $dir_bkp/$archive_name
     echo "Arquivo removido"
-   
+
     echo "Criptografando log"
     gpg -o $LOGFILE.gpg -e -r "Backup pessoal" $LOGFILE
     echo "Log criptografado"
@@ -83,8 +90,9 @@ date=$(date "+%Y-%m-%d")
 
 dir_pessoal=~/Seagate/Pessoal
 dir_bkp=~/Seagate/Backups
+last_bkp_archive=~/.local/bin/last_bkp.txt
 
-dirs=($(awk '{print $1}' last_bkp.txt))
+dirs=($(awk '{print $1}' $last_bkp_archive))
 
 case "$bkp_type" in
     t)
@@ -93,22 +101,22 @@ case "$bkp_type" in
 	directory=$dir_pessoal
 	archive_name="Pessoal-$date.tar.gz"
 	com_crypt_rem
-		
+
 	;;
 
     ts)
 	for directory in "${dirs[@]}"; do
-	    last_backup=($(cat last_bkp.txt | grep "$directory" | awk '{print $2'}))
+	    last_backup=($(cat $last_bkp_archive | grep "$directory" | awk '{print $2'}))
 	    directory_change=($(find $directory -type d -newermt $last_backup))
-										    
+
 	    if [[ -n "$directory_change" ]]; then
 		dir_name=$(basename "$directory")
 		LOGFILE=$dir_bkp/TS-$dir_name-$date.log
 		exec > >(tee >(awk '{ print strftime("[%H:%M:%S]"), $0; fflush(); }' >> "$LOGFILE")) 2>&1
 		archive_name="$dir_name-$date.tar.gz"
 
-		com_crypt_rem	
-		
+		com_crypt_rem
+
 	    fi
 
 	    echo "$directory com data de alteração anterior ao último backup, não será realizado"
@@ -164,14 +172,14 @@ case "$bkp_type" in
 	        break
     	    fi
 	done
-	
+
 	for directory in "${selected[@]}"; do
 	    base_name=$(basename "$directory")
 	    LOGFILE=$dir_bkp/P-$base_name-$date.log
 	    exec > >(tee >(awk '{ print strftime("[%H:%M:%S]"), $0; fflush(); }' >> "$LOGFILE")) 2>&1
-	    
+
 	    archive_name="$base_name-$date.tar.gz"
-	    
+
 	    com_crypt_rem
 	done
 	;;
