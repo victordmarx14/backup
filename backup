@@ -8,7 +8,7 @@
 ################################################################################
 # VERSÃO: v1.4.1                                                               #
 # HISTÓRICO:                                                                   #
-#   1.4.1: 02/11/2025							       #
+#   1.4.1: 02/11/2025 (9d488fd)						       #
 #     CORREÇÃO								       #
 #	 - Corrigido bug que fazia não encontrar o arquivo last_bkp.txt        #
 #   1.4.0: 22/10/2025 (fa6cfbf)                                                #
@@ -69,7 +69,7 @@ function com_crypt_rem() {
     echo "Arquivo removido"
 
     echo "Atualizando data de backup"
-    awk -v dir=$directory -v data=$date '{if ($1==dir) $2=data; print}' last_bkp.txt > last_bkp.tmp && mv last_bkp.tmp last_bkp.txt
+    awk -v dir=$directory -v data=$date '{if ($1==dir) $2=data; print}' $last_bkp_archive > $last_bkp_archive_tmp && mv $last_bkp_archive_tmp $last_bkp_archive
     echo "Atualização concluída"
 }
 
@@ -91,6 +91,7 @@ date=$(date "+%Y-%m-%d")
 dir_pessoal=~/Seagate/Pessoal
 dir_bkp=~/Seagate/Backups
 last_bkp_archive=~/.local/bin/last_bkp.txt
+last_bkp_archive_tmp=~/.local/bin/last_bkp.tmp
 
 dirs=($(awk '{print $1}' $last_bkp_archive))
 
