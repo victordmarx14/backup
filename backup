@@ -6,8 +6,11 @@
 # DATA: 20/09/2025                                                             #
 # DESCRIÇÃO: Gera backups de arquivos pessoais                                 #
 ################################################################################
-# VERSÃO: v1.4.1                                                               #
+# VERSÃO: v1.5.0                                                               #
 # HISTÓRICO:                                                                   #
+#   1.5.0: 08/02/2025                                                          #
+#     MELHORIA                                                                 #
+#        - Implementada cópia do arquivo last_bkp.txt                          #
 #   1.4.1: 02/11/2025 (9d488fd)						       #
 #     CORREÇÃO								       #
 #	 - Corrigido bug que fazia não encontrar o arquivo last_bkp.txt        #
@@ -68,9 +71,12 @@ function com_crypt_rem() {
     rm $LOGFILE
     echo "Arquivo removido"
 
-    echo "Atualizando data de backup"
-    awk -v dir=$directory -v data=$date '{if ($1==dir) $2=data; print}' $last_bkp_archive > $last_bkp_archive_tmp && mv $last_bkp_archive_tmp $last_bkp_archive
-    echo "Atualização concluída"
+    if [[ "$bkp_type" != "t" ]]; then
+	echo "Atualizando data de backup"
+	awk -v dir=$directory -v data=$date '{if ($1==dir) $2=data; print}' last_bkp.txt > last_bkp.tmp && mv last_bkp.tmp last_bkp.txt
+	echo "Atualização concluída"
+    fi
+    
 }
 
 bkp_type="$1"
@@ -90,8 +96,7 @@ date=$(date "+%Y-%m-%d")
 
 dir_pessoal=~/Seagate/Pessoal
 dir_bkp=~/Seagate/Backups
-last_bkp_archive=~/.local/bin/last_bkp.txt
-last_bkp_archive_tmp=~/.local/bin/last_bkp.tmp
+last_bkp_archive=$dir_pessoal/programacao/bash/backups/last_bkp.txt
 
 dirs=($(awk '{print $1}' $last_bkp_archive))
 
@@ -121,8 +126,11 @@ case "$bkp_type" in
 	    fi
 
 	    echo "$directory com data de alteração anterior ao último backup, não será realizado"
-
-	done
+       done											 
+										 
+	    echo "Copiando arquivo de último backup"
+            cp last_bkp.txt ~/Seagate/Pessoal/programacao/bash/backups
+	    echo "Cópia concluída"
 	;;
 
     p)
@@ -149,6 +157,7 @@ case "$bkp_type" in
 	    # Transforma a entrada em array (separado por espaço)
 	    choices=($REPLY)
 
+	    # Caso o usuário informe o mesmo número 2 vezes, garante que será executada apenas 1 vez
 	    declare -A seen=()
 
     	    # Array para armazenar os diretórios válidos
@@ -157,6 +166,7 @@ case "$bkp_type" in
 	    # Validar cada escolha
     	    valid=true
     	    for choice in "${choices[@]}"; do
+		# Valida se foi informado um número e se esse número é maior ou igual que 1 e menor ou igual à última opção da lista
         	if [[ "$choice" =~ ^[0-9]+$ ]] && (( choice >= 1 && choice <= ${#dirs[@]} )); then
 		    if [[ -z "${seen[$choice]}" ]]; then
 			selected+=("${dirs[choice-1]}")
