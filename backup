@@ -92,9 +92,13 @@ function backup_total_separado(){
 
 function backup_parcial(){
     checa_data_bkp 0
-    #echo ${array_dirs[@]}
-    local selecionadas=$(gum choose --no-limit --header 'Selecione os diretórios para backup' ${array_dirs[@]})
+    local opcoes=("VOLTAR" "${array_dirs[@]}")
+    local selecionadas=$(gum choose --no-limit --header 'Selecione os diretórios para backup' ${opcoes[@]})
 
+    if [[ -z "$selecionadas" || "$selecionadas" == *"VOLTAR"* ]] ; then
+	return 0
+    fi
+    
     while IFS= read -r pasta; do
 	base_dir=$(basename $pasta)
 	comp_cript $pasta "${base_dir}_${data}"
