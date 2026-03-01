@@ -1,5 +1,9 @@
 	# Changelog - Backup script
 	
+	## [2.0.1] - 01/03/2026
+	### Fixed
+	- Alterada chamada do transfere_bkp que não estava encontrando o arquivo.
+
 	## [2.0.0] - 17/02/2026
 	**BREAKING**
 	- Alterado layout do last_bkp.txt

@@ -5,17 +5,18 @@
 # CONTATO: victordmarx@pm.me                                                   #
 # DATA: 17/02/2026                                                             #
 # DESCRIÇÃO: Gera backups de arquivos pessoais                                 #
-# VERSÃO: 2.0.0                                                                #
+# VERSÃO: 2.0.1                                                                #
 ################################################################################
 
 data=$(date "+%Y-%m-%d")
 array_dirs=()
 last_bkp='/var/home/victor/Seagate/Pessoal/programacao/bash/backups/last_bkp.txt'
+dir_bkp="/var/home/victor/Seagate/Backups/"
 
 function comp_cript(){
     local dir_ori="$1"
     local nom_arq="$2"
-    local destino="/var/home/victor/Seagate/Backups/$nom_arq.gpg"
+    local destino="$dir_bkp$nom_arq.gpg"
 
     if gum spin --spinner points --title "Compactando e criptografando $nom_arq" -- tar -cz -C "$dir_ori" . | gpg -o "$destino" -e -r "Backup pessoal" ; then
 	gum style \
@@ -70,7 +71,7 @@ function backup_total(){
     transfere=$(gum choose --header 'Deseja transferir o backup total?' 'Sim' 'Não')
 
     case "$transfere" in
-	Sim) ./transfere_bkp "$nom_arq.gpg" ;;
+	Sim) transfere_bkp "$dir_bkp$nom_arq.gpg" ;;
 	Não) exit 0 ;;
     esac
 }
