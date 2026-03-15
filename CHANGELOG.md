@@ -1,5 +1,16 @@
 	# Changelog - Backup script
 	
+	## [2.0.2] - 15/03/2026
+	### Added
+	- Adicionados os diretórios var/home/victor/Seagate/cursos/lpic e /var/home/victor/Seagate/cursos/pos_graduacao no last_bkp.
+	
+	### Changed
+	- Feita alteraçao na funçao checa_data_bkp, para verificar a data apenas se o parametro for 1.
+	- Comentários adicionados em todo o código
+	
+	### Fixed
+	- Alterada forma de verificação da data de última alteração dos diretórios para verificar os subdiretórios.
+	
 	## [2.0.1] - 01/03/2026
 	### Fixed
 	- Alterada chamada do transfere_bkp que não estava encontrando o arquivo.

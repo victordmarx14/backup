@@ -5,110 +5,127 @@
 # CONTATO: victordmarx@pm.me                                                   #
 # DATA: 17/02/2026                                                             #
 # DESCRIÇÃO: Gera backups de arquivos pessoais                                 #
-# VERSÃO: 2.0.1                                                                #
+# VERSÃO: 2.0.2                                                                #
 ################################################################################
 
+# Definiçao de variaveis
 data=$(date "+%Y-%m-%d")
 array_dirs=()
 last_bkp='/var/home/victor/Seagate/Pessoal/programacao/bash/backups/last_bkp.txt'
 dir_bkp="/var/home/victor/Seagate/Backups/"
 
 function comp_cript(){
-    local dir_ori="$1"
-    local nom_arq="$2"
-    local destino="$dir_bkp$nom_arq.gpg"
+    local dir_ori="$1" # define a variavel com o valor do primeiro parametro passado na chamada
+    local nom_arq="$2" # define a variavel com o valor do segundo parametro passado na chamada
+    local destino="$dir_bkp$nom_arq.gpg" # define onde o arquivo deve ser gerado e o nome
 
-    if gum spin --spinner points --title "Compactando e criptografando $nom_arq" -- tar -cz -C "$dir_ori" . | gpg -o "$destino" -e -r "Backup pessoal" ; then
-	gum style \
-            --foreground 2 \
-            --border-foreground 2 \
-            --border double \
-            --align center \
-            --width 50 \
-            --margin "1 2" \
-            --padding "1" \
-            "✅ Backup concluído!" "Arquivo: $nom_arq.gpg"
-	return 0
+    if gum spin --spinner points --title "Compactando e criptografando $nom_arq" -- tar -cz -C "$dir_ori" . | gpg -o "$destino" -e -r "Backup pessoal" ; then # faz a compactaçao ja gerando um arquivo criptografado, usando um gum spinner para indicar que esta realizando
+		gum style \
+				--foreground 2 \
+				--border-foreground 2 \
+				--border double \
+				--align center \
+				--width 50 \
+				--margin "1 2" \
+				--padding "1" \
+				"✅ Backup concluído!" "Arquivo: $nom_arq.gpg" # em caso de sucesso, mostra um quadro com a mensagem de sucesso
+	return 0 # retorna para a funçao anterior com codigo de sucesso
 
     else
-	gum style \
-            --foreground 1 \
-            --border-foreground 1 \
-            --border double \
-            --align center \
-            --width 50 \
-            "❌ ERRO CRÍTICO" "Falha ao processar $dir_ori"
-        return 1
+		gum style \
+				--foreground 1 \
+				--border-foreground 1 \
+				--border double \
+				--align center \
+				--width 50 \
+				"❌ ERRO CRÍTICO" "Falha ao processar $dir_ori" # em caso de erro, mostra um quadro com uma mensagem de erro
+        return 1 # retorna para a funçao anterior com codigo de erro
     fi    
 }
 
 function checa_data_bkp(){
-    while IFS="|" read -r pasta data_bkp; do
-	local ult_mod=$(stat $pasta | grep Modify | awk {'print $2'})
-
-	if [[ "$1" -eq 1 ]]; then
-	    if [[ $data_bkp < $ult_mod ]]; then
-		array_dirs+=("$pasta")
-	    fi
-	else
-	    array_dirs+=("$pasta")
-	fi
+# -----------------------------------------------------------------------------
+# Verifica se a data de alteraçao de um diretorio e posterior a data do ultimo backup.
+#------------------------------------------------------------------------------
+    while IFS="|" read -r pasta data_bkp; do # percorre o arquivo last_bkp usando o | como separador e jogando o primeiro retorno na variavel pasta e o segundo na variavel data_bkp.
+		if [[ "$1" -eq 1 ]]; then # verifica o valor do parametro usado na chamada da funçao, se for 1
+			local ult_mod=$(gum spin --spinner points --title "Verificando data de alteração de $pasta" -- bash -c "find $pasta -type f -printf '%TY-%Tm-%Td\n' | sort | tail -1") # verifica a data de alteraçao dos subdiretorios da pasta informada, joga para uma variavel local e mostra o gum spinner
+			
+			if [[ $data_bkp < $ult_mod ]]; then # valida se a data de backup e menor que a data de alteraçao
+				array_dirs+=("$pasta") # se for, coloca o diretorio em um array, se nao, prossegue com o while. O array e usado para fazer os backups em sequencia.
+			fi
+		else # se o valor do parametro for diferente de 1, apenas adiciona o diretorio num array, que e usado para exibir o menu da funcao backup_parcial
+			array_dirs+=("$pasta")
+		fi
 	
     done < "$last_bkp"
 }
 
 function atualiza_data_bkp(){
-    local pasta_alvo="$1"
-
-    sed "s#^${pasta_alvo}|.*#${pasta_alvo}|${data}#" "$last_bkp" > "${last_bkp}.tmp" && mv "${last_bkp}.tmp" "$last_bkp"
-	
+# -----------------------------------------------------------------------------
+# Atualiza a data de backup no last_bkp.
+#------------------------------------------------------------------------------
+    local pasta_alvo="$1" # coloca o diretorio passado na chamada da funcao em uma variavel local
+    sed "s#^${pasta_alvo}|.*#${pasta_alvo}|${data}#" "$last_bkp" > "${last_bkp}.tmp" && mv "${last_bkp}.tmp" "$last_bkp" # faz a alteraçao da data gerando um arquivo temporario e renomeando em seguida
 }
 
 function backup_total(){
-    nom_arq="backup_total_$data"
-    comp_cript '/var/home/victor/Seagate/Pessoal' $nom_arq
+# -----------------------------------------------------------------------------
+# Faz o backup completo do diretorio Pessoal gerando 1 arquivo criptografado.
+#------------------------------------------------------------------------------
+    nom_arq="backup_total_$data" # Define o nome do arquivo concatenando com a data definida no inicio.
+    comp_cript '/var/home/victor/Seagate/Pessoal' $nom_arq # chama a funçao que gera o arquivo criptografado passando o nome do arquivo que ela deve gerar
 
-    transfere=$(gum choose --header 'Deseja transferir o backup total?' 'Sim' 'Não')
+    transfere=$(gum choose --header 'Deseja transferir o backup total?' 'Sim' 'Não') # Apos gerar o arquivo, e questionado se deseja transferir para pendrive e mini pc.
 
     case "$transfere" in
-	Sim) transfere_bkp "$dir_bkp$nom_arq.gpg" ;;
-	Não) exit 0 ;;
+		Sim) transfere_bkp "$dir_bkp$nom_arq.gpg" ;; # chama o script transfere_bkp
+		Não) exit 0 ;; # sai com codigo de saida de sucesso
     esac
 }
 
 function backup_total_separado(){
-    checa_data_bkp 1
-    for i in ${array_dirs[@]} ; do
-	base_dir=$(basename $i)
-	comp_cript $i "${base_dir}_${data}"
+# -----------------------------------------------------------------------------
+# Faz o backup dos subdiretorios de Pessoal e gera 1 arquivo para cada diretorio.
+# Sao feitos backups apenas dos diretorio cuja data de alteraçao e posterior ao ultimo backup.
+#------------------------------------------------------------------------------
+    checa_data_bkp 1 # chama a funçao checa_data_bkp passando o parametro 1
+    
+    for i in ${array_dirs[@]} ; do # percorre o array criado na funcao checa_data_bkp, colocando cada caminho na variavel i
+		base_dir=$(basename $i) # pega apenas o nome do ultimo diretorio, sera usado para definir o nome do arquivo
+		comp_cript $i "${base_dir}_${data}" # chama a funçao que gera os arquivos, passando o caminho do diretorio e o nome do arquivo que deve ser gerado, concatenando o nome do diretorio com a data
 
-	if [[ $? == 0 ]] ; then
-	    atualiza_data_bkp $i
-	else
-	    continue
-	fi
+		if [[ $? == 0 ]] ; then # se o retorno da funçao anterior for 0 (sucesso)
+			atualiza_data_bkp $i # chama a funçao atualiza_data_bkp passando o diretorio
+		else
+			continue # se o retorno for diferente de zero, continua com o for
+		fi
 	
     done
 }
 
 function backup_parcial(){
-    checa_data_bkp 0
-    local opcoes=("VOLTAR" "${array_dirs[@]}")
-    local selecionadas=$(gum choose --no-limit --header 'Selecione os diretórios para backup' ${opcoes[@]})
+# -----------------------------------------------------------------------------
+# Lê os diretório de last_bkp.txt e exibe uma lista. É possível selecionar os diretórios que deseja fazer backup.
+# Data de alteração não é verificada.
+#------------------------------------------------------------------------------
+    checa_data_bkp 0 # chama a função enviando o parâmetro 0, isso serve apenas para a função montar a lista de diretórios
+    local opcoes=("VOLTAR" "${array_dirs[@]}") # cria uma variável local que armazena a opção voltar e a lista de diretórios
+    local selecionadas=$(gum choose --no-limit --header 'Selecione os diretórios para backup' ${opcoes[@]}) # exibe um menu de multipla escolha, e coloca as opções selecionadas na variável
 
-    if [[ -z "$selecionadas" || "$selecionadas" == *"VOLTAR"* ]] ; then
-	return 0
+    if [[ -z "$selecionadas" || "$selecionadas" == *"VOLTAR"* ]] ; then # se a variável for vazia ou for selecionada a opção voltar, returna 0 para a função anterior
+		return 0
     fi
     
-    while IFS= read -r pasta; do
-	base_dir=$(basename $pasta)
-	comp_cript $pasta "${base_dir}_${data}"
+    while IFS= read -r pasta; do # usa um separador vazio para percorrer a variável $selecionadas e jogar cada valor na variável pasta
+		base_dir=$(basename $pasta) # usa o basename para criar o nome do arquivo
+		comp_cript $pasta "${base_dir}_${data}" # chama a função para gerar o arquivo, passando o caminho do diretório e o nome do arquivo a ser gerado
 
-	if [[ $? == 0 ]] ; then
-	    atualiza_data_bkp $pasta
-	else
-	    continue
-	fi
+		if [[ $? == 0 ]] ; then # se a função comp_cript retornar zero (sucesso)
+			atualiza_data_bkp $pasta # chama a função para atualizar a data do backup no last_bkp.txt
+		else # senão, a data não é atualizada e o script apenas continua para o próximo diretório
+			continue
+		fi
     done <<< $selecionadas
 }
 
@@ -117,19 +134,19 @@ if (( $# != 1 )); then # valida se a quantidade de parâmetros informados ($#) n
     option=$(gum choose 'Backup total' 'Backup total separado' 'Backup parcial' 'Backup de domingo' 'Sair' | tr -d ' ')
 
     case "$option" in
-	Backuptotal) backup_total ;;
-	Backuptotalseparado) backup_total_separado ;;
-	Backupparcial) backup_parcial ;;
-	Backupdedomingo) rm -f /var/home/victor/Seagate/Backups/* ; backup_total_separado ; backup_total ;;
-	Sair) exit 0 ;;
+		Backuptotal) backup_total ;;
+		Backuptotalseparado) backup_total_separado ;;
+		Backupparcial) backup_parcial ;;
+		Backupdedomingo) rm -f /var/home/victor/Seagate/Backups/* ; backup_total_separado ; backup_total ;;
+		Sair) exit 0 ;;
     esac
 
 else
     case "$1" in
-	-t) backup_total ;;
-	-ts) backup_total_separado ;;
-	-p) backup_parcial ;;
-	-d) rm -f /var/home/victor/Seagate/Backups/* ; backup_total_separado ; backup_total ;;
-	*) echo 'inválido' ; exit 1 ;;
+		-t) backup_total ;;
+		-ts) backup_total_separado ;;
+		-p) backup_parcial ;;
+		-d) rm -f /var/home/victor/Seagate/Backups/* ; backup_total_separado ; backup_total ;;
+		*) echo 'inválido' ; exit 1 ;;
     esac
 fi
