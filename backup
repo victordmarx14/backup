@@ -1,3 +1,4 @@
+
 #!/usr/bin/env bash
 
 ################################################################################
@@ -5,7 +6,7 @@
 # CONTATO: victordmarx@pm.me                                                   #
 # DATA: 17/02/2026                                                             #
 # DESCRIÇÃO: Gera backups de arquivos pessoais                                 #
-# VERSÃO: 2.0.2                                                                #
+# VERSÃO: 2.1.0                                                                #
 ################################################################################
 
 # Definiçao de variaveis
@@ -106,8 +107,8 @@ function backup_total_separado(){
 
 function backup_parcial(){
 # -----------------------------------------------------------------------------
-# Lê os diretório de last_bkp.txt e exibe uma lista. É possível selecionar os diretórios que deseja fazer backup.
-# Data de alteração não é verificada.
+# Lê os diretórios de last_bkp.txt e exibe uma lista. É possível selecionar os diretórios que deseja fazer backup.
+# Data de alteração não é verificada, mas é atualizada.
 #------------------------------------------------------------------------------
     checa_data_bkp 0 # chama a função enviando o parâmetro 0, isso serve apenas para a função montar a lista de diretórios
     local opcoes=("VOLTAR" "${array_dirs[@]}") # cria uma variável local que armazena a opção voltar e a lista de diretórios
@@ -127,6 +128,15 @@ function backup_parcial(){
 			continue
 		fi
     done <<< $selecionadas
+}
+
+function envia_proton_drive(){
+	transfere_proton=$(gum choose --header 'Deseja transferir os backups para o Drive?' 'Sim' 'Não')
+
+	case "$transfere_proton" in
+		Sim) command send_proton_drive ;; # chama o script send_proton_drive
+		Não) exit 0 ;; # sai com codigo de saida de sucesso
+    esac
 }
 
 
@@ -150,3 +160,5 @@ else
 		*) echo 'inválido' ; exit 1 ;;
     esac
 fi
+
+envia_proton_drive

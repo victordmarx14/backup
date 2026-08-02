@@ -1,5 +1,9 @@
 	# Changelog - Backup script
 	
+	## [2.1.0] - 26/07/2026
+	### Added
+	### Adicionada funcionalidade de envio para o Proton Drive.
+	
 	## [2.0.2] - 15/03/2026
 	### Added
 	- Adicionados os diretórios var/home/victor/Seagate/cursos/lpic e /var/home/victor/Seagate/cursos/pos_graduacao no last_bkp.
